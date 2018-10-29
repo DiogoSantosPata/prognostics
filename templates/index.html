@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>My title</title>    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.min.js"></script> <!-- plot -->    
+    <script src="https://code.jquery.com/jquery-1.10.2.js"></script>  <!-- js query -->
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.6/socket.io.min.js"></script>  <!-- socketio -->
+    
+
+
+
+<script>
+
+
+// var socket = io.connect('http://' + document.domain + ':' + location.port);
+// socket.on('connect', function() {
+//     // we emit a connected message to let knwo the client that we are connected.
+//     socket.emit('client_connected', {data: 'New client!'});
+// });
+
+
+// socket.on('message', function (data) {
+//     console.alert('message form backend ' + data);
+// });
+
+var log_sensor = [];
+var display_measure = true;
+
+function motion(event){
+
+    if( performance.now()/1000 < 2)
+    {
+        log_sensor.push(event.accelerationIncludingGravity.x);
+
+          // document.getElementById("accelerometer").innerHTML = "Accelerometer: "
+          //   + event.accelerationIncludingGravity.x + ", "
+          //   + event.accelerationIncludingGravity.y + ", "
+          //   + event.accelerationIncludingGravity.z;
+    }
+
+    else        
+    {
+        if( display_measure == true){            
+
+            draw(log_sensor);
+            display_measure = false;
+
+            var data = {result: log_sensor};
+            data = JSON.stringify(data);
+            console.log(data)
+
+            $.getJSON( '/_array2python', {
+                wordlist: JSON.stringify(data)
+            }, function(data){
+                console.log(data.result)
+                $( "#result" ).text(data.result);
+            });
+
+
+        }
+    }
+
+
+}
+
+
+
+function draw(data)
+{        
+    var labels = [];
+    for(var i=0; i< data.length; i++){ labels.push( '.' ); }
+
+    var ctx = document.getElementById("myChart");
+    var myLineChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{ 
+            label: "Accelerometer",
+            data: data,
+            borderColor: "#3e95cd",
+            fill: false,
+            axes: false
+            }]
+        }
+    });
+}
+
+
+
+function go()
+{
+
+    if(window.DeviceMotionEvent)
+    {
+        window.addEventListener("devicemotion", motion, false);        
+    }
+
+    else
+    {
+        var status = document.getElementById("status");
+        status.innerHTML = status.innerHTML.replace( "is supported", "is not supported" );
+    }
+  
+}
+
+
+</script>
+
+
+
+</head>
+
+
+<body onload="go();" data-gr-c-s-loaded="true">
+
+<div id="status"><a href="\&quot;http://www.w3.org/TR/orientation-event/&quot;">http://www.w3.org/TR/orientation-event/</a> is supported.</div>
+<br><br>
+
+<canvas id="myChart" width="400" height="400"></canvas>
+
+<div id="log"></div>
+
+</body>
+
+</html>
